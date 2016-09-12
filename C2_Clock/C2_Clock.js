@@ -1,3 +1,4 @@
+
 function setup() {
   createCanvas(800, 800);
 }
@@ -12,10 +13,10 @@ function draw() {
   var m = minute();
   var s = second();
   
-  var handScaler = 200;
+  var handScaler = 250;
   
-  var thetaH = map(h%12, 0, 12, 0, TAU);
-  var thetaM = map(m, 0, 60, 0, TAU);
+  var thetaH = map(h%12 + m/60.0, 0, 12, 0, TAU);
+  var thetaM = map(m + s/60.0, 0, 60, 0, TAU);
   var thetaS = map(s, 0, 60, 0, TAU);
   
   var s_x = + sLength*handScaler*sin(thetaS);
@@ -28,7 +29,6 @@ function draw() {
   var h_y = - hLength*handScaler*cos(thetaH);
   
   background(col);
-  noStroke();
   
   //fill(255);
   //arc(width/2, height/2, handScaler*sLength, handScaler*sLength, 0, thetaS);
@@ -36,34 +36,64 @@ function draw() {
   //arc(width/2, height/2, handScaler*mLength, handScaler*mLength, 0, thetaM);
   //fill(0);
   //arc(width/2, height/2, handScaler*hLength, handScaler*hLength, 0, thetaH);
+
+  fill(0, 100);
+  noStroke();
+  arc(width/2, height/2+8, 2*handScaler, 2*handScaler, 0, TAU);  
   
   fill(255);
+  stroke(0);
+  strokeWeight(5);
   arc(width/2, height/2, 2*handScaler, 2*handScaler, 0, TAU);
   
+  strokeWeight(1);
   // Hour Ticks
   fill(0);
   for (i=1; i<13; i++) {
     var thetaHR = map(i%12, 0, 12, 0, TAU);
-    var hX = + 0.85*handScaler*sin(thetaHR);
-    var hY = - 0.85*handScaler*cos(thetaHR);
-    //ellipse(width/2 + hX, width/2 + hY, 5, 5);
-    textSize(20);
+    var hX = + handScaler*sin(thetaHR);
+    var hY = - handScaler*cos(thetaHR);
+    ellipse(width/2 + hX*0.985, width/2 + hY*0.985, 5, 5);
+    textSize(30);
     textAlign(CENTER,CENTER);
-    text(i, width/2 + hX, width/2 + hY);
+    text(i, width/2 + hX*0.85, width/2 + hY*0.85);
   }
+  
+  for (i=0; i<60; i++) {
+    var thetaSC = map(i, 0, 60, 0, TAU);
+    var sX = + handScaler*sin(thetaSC);
+    var sY = - handScaler*cos(thetaSC);
+    ellipse(width/2 + sX*0.99, width/2 + sY*0.99, 3, 3);
+  }
+  
   
   stroke('#FF0000');
   // Seconds
-  strokeWeight(1);
+  strokeWeight(2);
   line(width/2, height/2, width/2 + s_x, height/2 + s_y);
   
   stroke(0);
   // Minutes
-  strokeWeight(2);
+  strokeWeight(4);
   line(width/2, height/2, width/2 + m_x, height/2 + m_y);
   
   // Hours
-  strokeWeight(5);
+  strokeWeight(10);
+  line(width/2, height/2, width/2 + h_x, height/2 + h_y);
+  
+  stroke(0, 100);
+  translate(0, 6);
+  
+  // Seconds
+  strokeWeight(2);
+  line(width/2, height/2, width/2 + s_x, height/2 + s_y);
+  
+  // Minutes
+  strokeWeight(4);
+  line(width/2, height/2, width/2 + m_x, height/2 + m_y);
+  
+  // Hours
+  strokeWeight(10);
   line(width/2, height/2, width/2 + h_x, height/2 + h_y);
   
 }
