@@ -1,4 +1,4 @@
-// An Agent Based Visualization for a clock
+// Agent Based Visualization for a clock
 // Ira Winder, Sep 2016
 
 var col = 200;
@@ -12,26 +12,30 @@ var minutes = [];
 var hours = [];
 
 // Gravity Well Positions for Seconds, Minutes, and Hours
-var secX, secY, minX, minY, hrX, hrY;
+var originX, originY, secX, secY, minX, minY, hrX, hrY;
 
 var secDiam, minDiam, hrDiam;
 
 function setup() {
-  createCanvas(1500, 700);
+  createCanvas(600, 600);
   
   // Gravity Well Positions for Seconds, Minutes, and Hours
-  
-    // Right
-    secX = 4*width/5;
-    secY = height/2;
     
-    // Center
-    minX = 11*width/20;
-    minY = height/2;
+    // Hour
+    hrX = 0.25*width;
+    hrY = 0.25*height;
     
-    // Left
-    hrX = width/5;
-    hrY = height/2;
+    // Minute
+    minX = 0.8*width;
+    minY = 0.4*height;
+    
+    // Second
+    secX = 0.35*width;
+    secY = 0.8*height;
+    
+    // Origin (for seconds)
+    originX = 0.8*width;
+    originY = 0.8*height;
   
   // Relative Sizes of Clock Agents
   
@@ -40,10 +44,11 @@ function setup() {
     hrDiam = 4.0;
   
   // Absolute size of Clock Agents
-  
-    secDiam *= width/80;
-    minDiam *= width/80;
-    hrDiam *= width/80;
+    
+    var scalar = width/50;
+    secDiam *= scalar;
+    minDiam *= scalar;
+    hrDiam  *= scalar;
   
   // Initializes Clock Agents
   initClock();
@@ -71,32 +76,32 @@ function initClock() {
   
   // Init Seconds
   for (var i=0; i<s; i++) {
-    seconds[i] = newSecond(i+1);
+    seconds[i] = new Agent(i+1, 's', 60, secDiam, secX + random(-width/8, width/8), secY + random(-height/4, height/4), secX, secY);
   }
   
   // Init Minutes
   for (var i=0; i<m; i++) {
-    minutes[i] = new Agent(i+1, 60, minDiam, minX + random(-width/8, width/8), random(height), minX, minY);
+    minutes[i] = new Agent(i+1, 'm', 60, minDiam, minX + random(-width/4, width/4), minY + random(-height/4, height/4), minX, minY);
   }
   
   // Init Hours
   for (var i=0; i<h; i++) {
-    hours[i] = new Agent(i+1, 24, hrDiam, hrX + random(-width/8, width/8), random(height), hrX, hrY);
+    hours[i] = new Agent(i+1, 'h', 24, hrDiam, hrX + random(-width/4, width/4), hrX + random(-height/4, height/4), hrX, hrY);
   }
 }
 
-// Agent(diam, shade, maxVel, seekAcc, repelAcc, posX, posY, targetX, targetY)
+// Agent(value, unit, maxValue, diam, posX, posY, targetX, targetY)
 
 function newSecond(value) {
-  return new Agent(value, 60, secDiam, secX + random(-width/8, width/8), random(height), secX, secY);
+  return new Agent(value, 's', 60, secDiam, originX, originY + random(-20,20), secX, secY);
 }
 
 function newMinute(value) {
-  return new Agent(value, 60, minDiam, secX, secY, minX, minY);
+  return new Agent(value, 'm', 60, minDiam, secX, secY, minX, minY);
 }
 
 function newHour(value) {
-  return new Agent(value, 24, hrDiam, minX, minY, hrX, hrY);
+  return new Agent(value, 'h', 24, hrDiam, minX, minY, hrX, hrY);
 }
 
 function updateClockNum() {
@@ -135,44 +140,53 @@ function updateClockPos() {
   
   // Update Agent Positions
   for (var i=0; i<seconds.length; i++) {
+    seconds[i].checkHighlight(i == seconds.length-1);
     seconds[i].seekForce();
     
     for (var j=0; j<seconds.length; j++) 
       if (i != j) 
-        seconds[i].repelForce(seconds[j].posX, seconds[j].posY);
+        seconds[i].repelForce(seconds[j].posX, seconds[j].posY, seconds[j].diam);
     
     seconds[i].update();
-    seconds[i].display(i == seconds.length-1);
+    seconds[i].display();
   }
   
   for (var i=0; i<minutes.length; i++) {
+    minutes[i].checkHighlight(i == minutes.length-1);
     minutes[i].seekForce();
     
     for (var j=0; j<minutes.length; j++) 
       if (i != j) 
-        minutes[i].repelForce(minutes[j].posX, minutes[j].posY);
+        minutes[i].repelForce(minutes[j].posX, minutes[j].posY, minutes[j].diam);
     
     minutes[i].update();
-    minutes[i].display(i == minutes.length-1);
+    minutes[i].display();
   }
   
   for (var i=0; i<hours.length; i++) {
+    hours[i].checkHighlight(i == hours.length-1);
     hours[i].seekForce();
     
     for (var j=0; j<hours.length; j++) 
       if (i != j) 
-        hours[i].repelForce(hours[j].posX, hours[j].posY);
+        hours[i].repelForce(hours[j].posX, hours[j].posY, hours[j].diam);
     
     hours[i].update();
-    hours[i].display(i == hours.length-1);
+    hours[i].display();
   }
   
 }
 
-function Agent(value, maxValue, diam, posX, posY, targetX, targetY) {
+function Agent(value, unit, maxValue, diam, posX, posY, targetX, targetY) {
   
   //The hour, minute, or second value that the agent represents
   this.value = value;
+  
+  // The unit of the value as 'h', 'm', or 's'
+  this.unit = unit;
+  
+  // Flag the agent as representing the current time
+  this.highlight = false;
   
   // Agent Diameter
   this.diam = diam;
@@ -262,7 +276,7 @@ function Agent(value, maxValue, diam, posX, posY, targetX, targetY) {
     this.accY += seekAccY;
   }
   
-  this.repelForce = function(neighborX, neighborY) {
+  this.repelForce = function(neighborX, neighborY, neighborDiam) {
     
     // Calculate Acceleration Repel Vector (Direction)
     var repelAccX = this.posX - neighborX;
@@ -270,7 +284,7 @@ function Agent(value, maxValue, diam, posX, posY, targetX, targetY) {
     
     // Apply rest of function if within repel radius [px]
     var distance = sqrt(sq(repelAccX) + sq(repelAccY));
-    if (distance < 1.1*diam) {
+    if (distance < 0.55*(diam+neighborDiam) ) {
     
       // Normalize Acceleration Repel Vector
       var magnitude = distance;
@@ -287,20 +301,40 @@ function Agent(value, maxValue, diam, posX, posY, targetX, targetY) {
     }
   }
   
-  this.display = function(highlight) {
-    if (highlight)
+  this.checkHighlight = function(check) {
+    if (check && this.highlight == false) {
+      this.highlight = true;
+      this.diam *= 3;
+    } else if (!check && this.highlight == true) {
+      this.highlight = false;
+      this.diam /= 3;
+    }
+  }
+  
+  this.display = function() {
+    
+    if (this.highlight) {
       fill('#FF00FF');
-    else
-      fill(this.shade);
+      stroke(255, 150);
+      strokeWeight(width/100);
+    } else {
+      fill(this.shade, 150);
+    }
       
     ellipse(this.posX, this.posY, this.diam, this.diam);
+    noStroke();
     
-    if (highlight)
+    if (this.highlight)
       fill(255);
     else
       fill(155+this.shade);
       
     textAlign(CENTER, CENTER);
-    text(value, this.posX, this.posY);
+    textSize(this.diam/3);
+    
+    if (this.highlight)
+      text(this.value + this.unit, this.posX, this.posY);
+    else 
+      text(this.value, this.posX, this.posY);
   }
 }
