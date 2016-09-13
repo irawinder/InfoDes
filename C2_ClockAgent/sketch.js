@@ -1,6 +1,7 @@
 // Agent Based Visualization for a clock
 // Ira Winder, Sep 2016
 
+// Background Color
 var col = 200;
 
 // Variables for holding integer time
@@ -14,6 +15,7 @@ var hours = [];
 // Gravity Well Positions for Seconds, Minutes, and Hours
 var originX, originY, secX, secY, minX, minY, hrX, hrY;
 
+// Diameters for Time Agents
 var secDiam, minDiam, hrDiam;
 
 function setup() {
@@ -59,38 +61,48 @@ function draw() {
   background(col);
   noStroke();
   
+  fetchTime();
+  
   // Updates Number of Agents
   updateClockNum();
   
   // Updates Position of Agents
-  updateClockPos();
-  
-//  text("frameRate: " + nf(frameRate(), 2, 1), 10, 20);
+  updateClockPos(seconds);
+  updateClockPos(minutes);
+  updateClockPos(hours);
   
 }
 
 function initClock() {
-  var h = hour();
-  var m = minute();
-  var s = second();
   
-  // Init Seconds
+  // Fetches time from computer
+  fetchTime();
+  
+  // Agent Constructor:
+  // Agent(value, unit, maxValue, diam, posX, posY, targetX, targetY)
+  
+  // Init Seconds Agents (one for every second)
   for (var i=0; i<s; i++) {
     seconds[i] = new Agent(i+1, 's', 60, secDiam, secX + random(-width/8, width/8), secY + random(-height/4, height/4), secX, secY);
   }
   
-  // Init Minutes
+  // Init Minutes Agents (one for every minute)
   for (var i=0; i<m; i++) {
     minutes[i] = new Agent(i+1, 'm', 60, minDiam, minX + random(-width/4, width/4), minY + random(-height/4, height/4), minX, minY);
   }
   
-  // Init Hours
+  // Init Hours Agents (one for every hour)
   for (var i=0; i<h; i++) {
     hours[i] = new Agent(i+1, 'h', 24, hrDiam, hrX + random(-width/4, width/4), hrX + random(-height/4, height/4), hrX, hrY);
   }
 }
 
-// Agent(value, unit, maxValue, diam, posX, posY, targetX, targetY)
+function fetchTime() {
+  // Fetches time from computer
+  h = hour();
+  m = minute();
+  s = second();
+}
 
 function newSecond(value) {
   return new Agent(value, 's', 60, secDiam, originX, originY + random(-20,20), secX, secY);
@@ -106,75 +118,58 @@ function newHour(value) {
 
 function updateClockNum() {
   
-  // Update Agent Quantities
-  h = hour();
-  m = minute();
-  s = second();
+  // Updates the number of time agents represented on the screen
   
-  if (seconds.length < s) {
-    while(seconds.length < s) {
+  if (seconds.length < s) { // If more agents needed ..
+    while(seconds.length < s) { 
+      // Inserts another Agent
       seconds.splice(seconds.length, 1, newSecond(seconds.length+1));
     }
-  } else if (s == 0 && seconds.length > 0) {
+  } else if (s == 0 && seconds.length > 0) { // If too many agents ...
+    // Wipes all agents
     seconds.splice(0, seconds.length);
   }
   
-  if (minutes.length < m) {
+  if (minutes.length < m) { // If more agents needed ..
     while(minutes.length < m) {
+      // Inserts another Agent
       minutes.splice(minutes.length, 1, newMinute(minutes.length+1));
     }
-  } else if (m == 0 && minutes.length > 0) {
+  } else if (m == 0 && minutes.length > 0) { // If too many agents ...
+    // Wipes all agents
     minutes.splice(0, minutes.length);
   }
   
-  if (hours.length < h) {
+  if (hours.length < h) { // If more agents needed ..
     while(hours.length < h) {
+      // Inserts another Agent
       hours.splice(hours.length, 1, newHour(hours.length+1));
     }
-  } else if (h == 0 && hours.length > 0) {
+  } else if (h == 0 && hours.length > 0) { // If too many agents ...
+    // Wipes all agents
     hours.splice(0, hours.length);
   }
 }
 
-function updateClockPos() {
+function updateClockPos(agents) {
   
   // Update Agent Positions
-  for (var i=0; i<seconds.length; i++) {
-    seconds[i].checkHighlight(i == seconds.length-1);
-    seconds[i].seekForce();
+  for (var i=0; i<agents.length; i++) {
+    // Checks to see if agent is current time, returns true if so
+    agents[i].checkHighlight(i == agents.length-1);
     
-    for (var j=0; j<seconds.length; j++) 
+    // Applies Acceleration Vector toward target
+    agents[i].seekForce();
+    
+    // Applies Acceleration Vector away from Neighbors
+    for (var j=0; j<agents.length; j++) 
       if (i != j) 
-        seconds[i].repelForce(seconds[j].posX, seconds[j].posY, seconds[j].diam);
+        agents[i].repelForce(agents[j].posX, agents[j].posY, agents[j].diam);
     
-    seconds[i].update();
-    seconds[i].display();
+    // Updates Agent Position and displays
+    agents[i].update();
+    agents[i].display();
   }
-  
-  for (var i=0; i<minutes.length; i++) {
-    minutes[i].checkHighlight(i == minutes.length-1);
-    minutes[i].seekForce();
-    
-    for (var j=0; j<minutes.length; j++) 
-      if (i != j) 
-        minutes[i].repelForce(minutes[j].posX, minutes[j].posY, minutes[j].diam);
-    
-    minutes[i].update();
-    minutes[i].display();
-  }
-  
-  for (var i=0; i<hours.length; i++) {
-    hours[i].checkHighlight(i == hours.length-1);
-    hours[i].seekForce();
-    
-    for (var j=0; j<hours.length; j++) 
-      if (i != j) 
-        hours[i].repelForce(hours[j].posX, hours[j].posY, hours[j].diam);
-    
-    hours[i].update();
-    hours[i].display();
-  }
-  
 }
 
 function Agent(value, unit, maxValue, diam, posX, posY, targetX, targetY) {
@@ -301,6 +296,7 @@ function Agent(value, unit, maxValue, diam, posX, posY, targetX, targetY) {
     }
   }
   
+  // If agent is "highlighted", makes the appropriate change to diameter and highlight status
   this.checkHighlight = function(check) {
     if (check && this.highlight == false) {
       this.highlight = true;
@@ -314,25 +310,30 @@ function Agent(value, unit, maxValue, diam, posX, posY, targetX, targetY) {
   this.display = function() {
     
     if (this.highlight) {
+      // Enlarged, colored agent if highlighted
       fill('#FF00FF');
       stroke(255, 150);
       strokeWeight(width/100);
     } else {
       fill(this.shade, 150);
     }
-      
+    
+    // draws the Agent as a circle
     ellipse(this.posX, this.posY, this.diam, this.diam);
     noStroke();
     
     if (this.highlight)
+      // White text if highlighted
       fill(255);
     else
       fill(155+this.shade);
-      
+    
+    // Text size centered and proportional to circle diameter
     textAlign(CENTER, CENTER);
     textSize(this.diam/3);
     
     if (this.highlight)
+      // includes time unit if highlighted
       text(this.value + this.unit, this.posX, this.posY);
     else 
       text(this.value, this.posX, this.posY);
